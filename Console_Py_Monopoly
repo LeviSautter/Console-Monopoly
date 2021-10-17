@@ -23,8 +23,9 @@ def main():
     player_order = []
 
     while player_count not in range(2, 5):
-        player_count = input()
-        if not (player_count.strip().isdigit() and int(player_count) in range(2, 5)):
+        player_count = input().strip()
+        is_valid_int = player_count.isdigit() and player_count != ""
+        if not (is_valid_int and int(player_count) in range(2, 5)):
             print('Try again, 2-4 players only.')
         player_count = int(player_count)
 
