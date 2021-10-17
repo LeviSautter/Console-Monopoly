@@ -330,19 +330,20 @@ def title(): #Function for displaying the title of the game
 
 
 def rules():
+    WEBSITE = "https://www.officialgamerules.org/monopoly"
     answer = 'z'
     print()
-    print("Type 'yes' if you want to open https://www.officialgamerules.org/monopoly.")
+    print(f"Type 'yes' if you want to open {WEBSITE}.")
     print("Or type, 'no' if not.")
-    while answer.lower() not in {'yes','no'}:
+    while answer.lower() not in {'yes', 'no'}:
         answer = input()
-        if answer.lower() not in {'yes','no'}:
+        if answer.lower() not in {'yes', 'no'}:
             print('Try again')
     answer.lower()
     print('\n')
     if answer == 'yes':
-        webbrowser.open("https://www.officialgamerules.org/monopoly")
-    if answer == 'no':
+        webbrowser.open(WEBSITE)
+    if answer == 'no':  # Can just be removed unless you need something when answer == no
         pass
     print()
 
