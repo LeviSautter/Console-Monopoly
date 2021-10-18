@@ -20,11 +20,10 @@ def main():
     board = Board()
     player_count = 0
     players = []
-    player_order = []
 
     while player_count not in range(2, 5):
-        player_count = input()
-        if not (player_count.strip().isdigit() and int(player_count) in range(2, 5)):
+        player_count = input().strip()
+        if not (player_count.isdecimal() and int(player_count) in range(2, 5)):  # This fixes issue of only whitespace
             print('Try again, 2-4 players only.')
         player_count = int(player_count)
 
@@ -82,7 +81,7 @@ def game(p_o,board):
                     continue
                 else:
                     p_o[p]._rolls -= 1
-                    x=p_o[p].roll_dice(1)
+                    x=p_o[p].roll_dice(True)
                     p_o[p]._pos += x
                     if p_o[p]._pos > 39:
                         p_o[p]._pos -=40
@@ -97,10 +96,9 @@ def game(p_o,board):
         command = ''
         p_o[p]._rolls   = 1
         p_o[p]._doubles = 0
-        if p == len(p_o)-1:
-            p = 0
-        else:
-            p += 1
+        p += 1
+        p %= len(p_o)
+       
 
 
 #----------------------------------------------------------------------
@@ -148,7 +146,8 @@ class Board:
         0,[50,200,600,1400,1700,2000,200,200]]
 
         for i in range(40):
-            self._board.append([tile_types[i],tile_names[i],tile_cost[i],tile_house_data[i],5]) #5 represents whether the tile is owned or not. player 1 = 0, player 2 = 0, etc.
+            self._board.append([tile_types[i],tile_names[i],tile_cost[i],tile_house_data[i],5])
+            # 5 represents whether the tile is owned or not. player 1 = 0, player 2 = 0, etc.
     
 
 class Player:
@@ -162,33 +161,33 @@ class Player:
         self._rolls = 1
         self._prop = [] #properties owned
 
-    def roll_dice(self,x): #x is either 1 or 0. This differentiates between rolling for starting place and rolling in game
-        die_1 = random.randint(1,6)
-        die_2 = random.randint(1,6)
+    def roll_dice(self, is_started):
+        die1 = random.randint(1,6)  #had inconsistent named variables
+        die2 = random.randint(1,6)
         print('Rolling die...')
         for i in range(10):
             num1,num2 = random.randint(1,6),random.randint(1,6)
             if i != 9:
                 sys.stdout.write("\r" + str(num1)+' '+str(num2))
             else:
-                sys.stdout.write("\r" + str(die_1)+' '+str(die_2))
+                sys.stdout.write("\r" + str(die1)+' '+str(die2))
             sys.stdout.flush()
             sleep(.4)
         sleep(1.5)
         print()
-        self._recent_roll = die_1+die_2
-        if x == 1:
-            if die_1 == die_2:
+        self._recent_roll = die1+die2
+        if is_started:
+            if die1 == die2:
                 self._doubles+=1
                 self._rolls+=1
                 print('Doubles! +1 roll this turn.')
-            if self._recent_roll in {8,11}:
+            if self._recent_roll in {8, 11}:
                 string = 'You rolled an'
             else:
                 string = 'You rolled a'
-            print(string,self._recent_roll)
+            print(string, self._recent_roll)
             print('\n\n')
-        return die_1+die_2
+        return self._recent_roll
     
     def go(self):
         self._money+=200
@@ -249,12 +248,12 @@ def goes_first(player_count,players):
         while roll != '':
             roll = input("Press 'Enter' to roll the die.\n")
 
-        x=players[i].roll_dice(0)
+        x=players[i].roll_dice(False)
         vals.append((x,players[i]))
         print()
         if x < 5:
             print('Uh oh',players[i]._name+', you only got',x,'\n')
-        if x > 4 and x <9:
+        if x > 4 and x < 9:
             print('Not bad',players[i]._name+', you scored',x,'\n')
         if x > 8 and x != 12:
             print('Well done',players[i]._name+', you got',str(x)+'\n')
