@@ -6,10 +6,10 @@ Monopoly
 
 import random
 import sys
-from time import *
 import webbrowser
 import os
-
+from time import *
+from CM_Classes import *
 
 def main():
     print('+--------------------+')
@@ -24,7 +24,7 @@ def main():
 
     while player_count not in range(2, 5):
         player_count = input()
-        if not (player_count.strip().isdigit() and int(player_count) in range(2, 5)):
+        if not (player_count.strip().isdigit() and int(player_count) in range(2, 5) and player_count != ''):
             print('Try again, 2-4 players only.')
         player_count = int(player_count)
 
@@ -32,7 +32,7 @@ def main():
         name = input(f"\nPlayer {i+1}, what is your name?\n")
         players.append(Player(name))
     play_order = goes_first(player_count,players)
-    title()
+    #title()
     help_menu(0)
     game(play_order,board)
 
@@ -40,11 +40,11 @@ def main():
 def game(p_o,board):
     p = 0 #This variable represents the index of the current player.  p= 0 means player 1, etc.
     command = ''
-    while board._game_over is False: #Game loop
-        print("It's your turn",p_o[p]._name)
+    while board.game_over is False: #Game loop
+        print("It's your turn",p_o[p].name)
 
-        while command != 'end' or p_o[p]._jail is False: #Turn loop
-            if p_o[p]._doubles == 3:
+        while command != 'end' or p_o[p].jail is False: #Turn loop
+            if p_o[p].doubles == 3:
                 pass #SEND TO JAIL HAERE
             print("Please enter a command...")
             command = input().lower()
@@ -56,19 +56,19 @@ def game(p_o,board):
             elif command == 'help':
                 help_menu(1)
 
-            elif command == 'end' and p_o[p]._rolls == 0:
+            elif command == 'end' and p_o[p].rolls == 0:
                 print()
                 print('Turn over')
                 print('-'*50)
                 print('\n\n')
                 break
 
-            elif command == 'end' and p_o[p]._rolls != 0:
+            elif command == 'end' and p_o[p].rolls != 0:
                 print('You still have a roll available')
 
             elif command == 'balance':
                 print()
-                print('You have $'+str(p_o[p]._money))
+                print('You have $'+str(p_o[p].money))
 
             elif command == 'jailbreak':
                 pass #GET OUT OF JAIL FREE CARD
@@ -77,15 +77,15 @@ def game(p_o,board):
                 pass #HELPER FUNCTION TO PRINT PROPERTIES
             
             elif command == '':
-                if p_o[p]._rolls == 0:
+                if p_o[p].rolls == 0:
                     print("Sorry, you already rolled this turn. Try another command, or type 'end' to end the turn.")
                     continue
                 else:
-                    p_o[p]._rolls -= 1
+                    p_o[p].rolls -= 1
                     x=p_o[p].roll_dice(1)
-                    p_o[p]._pos += x
-                    if p_o[p]._pos > 39:
-                        p_o[p]._pos -=40
+                    p_o[p].pos += x
+                    if p_o[p].pos > 39:
+                        p_o[p].pos -=40
                         p_o[p].go()
                         print('Passed GO! Collect $200')
                     y=land(p_o,p,board)
@@ -95,103 +95,12 @@ def game(p_o,board):
                 print("Unknown command. Please try again, or type 'help'.")
 
         command = ''
-        p_o[p]._rolls   = 1
-        p_o[p]._doubles = 0
+        p_o[p].rolls   = 1
+        p_o[p].doubles = 0
         if p == len(p_o)-1:
             p = 0
         else:
             p += 1
-
-
-#----------------------------------------------------------------------
-#----------------------------- CLASSES --------------------------------
-#----------------------------------------------------------------------
-    
-
-class Board:
-    def __init__(self):
-        self._game_over = False
-        self._board = []
-        '''
-        Tile types are to differentiate from the types of tiles. 0 = property, 1 = community chest,
-        2 = chance, 3 = unique, 4 = railroad, 5 = electric company/water works.
-        '''
-        tile_types = [3,0,1,0,3,5,0,2,0,0,3,0,4,0,0,5,0,1,0,0,3,0,2,0,0,5,0,0,4,0,3,0,0,1,0,0,2,0,3,0]
-
-        tile_names = ['GO','Mediterranean Avenue','Community Chest','Baltic Avenue','Income Tax',
-        'Reading Railroad','Oriental Avenue','Chance','Vermont Avenue',
-        'Connecticut Avenue','Just Visiting','St. Charles Place','Electric Company',
-        'States Avenue','Virgina Avenue','Pennsylvania Railroad','St. James Place',
-        'Community Chest','Tennessee Avenue','New York Avenue','Free Parking',
-        'Kentucky Avenue','Chance','Indiana Avenue','Illinois Avenue',
-        'B. & O. Railroad','Atlantic Avenue','Ventnor Avenue','Water Works',
-        'Marvin Gardens','Go To Jail','Pacific Avenue','North Carolina Avenue',
-        'Community Chest','Pennsylvania Avenue','Short line','Chance','Park Place',
-        'Luxury Tax','Boardwalk']
-
-        tile_cost =  [0,60,0,60,200,200,100,0,100,120,0,140,150,140,160,200,180,0,180,200,0,220,0,220,
-                      240,200,260,260,150,280,0,300,300,0,320,200,0,350,100,400]
-
-        '''
-        This is a 2d list of all the stuff about houses. Left to right numbers represent,rent with 
-        0,1,2,3,4 houses and hotel. house cost, and finally mortgage price. 0's mean the data is n\a 
-        to that tile.
-        '''
-        tile_house_data = [0,[2,10,30,90,160,250,50,30],0,[4,20,60,180,320,450,50,30],0,[25,50,100,200,100],
-        [6,30,90,270,400,550,50,50],0,[6,30,90,270,400,550,50,50],[8,40,100,300,450,600,50,60],0,
-        [10,50,150,450,625,750,100,70],[150,75],[10,50,150,450,625,750,100,70],[12,60,180,500,700,900,100,80],
-        [25,50,100,200,100],[14,70,200,550,750,950,90],0,[14,70,200,550,750,950,90],[16,80,220,600,800,1000,100,100],
-        0,[18,90,250,700,875,1050,150,110],0,[18,90,250,700,875,1050,150,110],[20,100,300,750,925,1100,150,120],
-        [25,50,100,200,100],[22,110,330,800,975,1150,150,130],[22,110,330,800,975,1150,150,130],[150,75],
-        [24,120,360,850,1025,1200,150,140],0,[26,130,390,900,1100,1275,200,150],[26,130,390,900,1100,1275,200,150],
-        0,[28,150,450,1000,1200,1400,200,160],[25,50,100,200,100],0,[35,175,500,1100,1300,1500,200,175],
-        0,[50,200,600,1400,1700,2000,200,200]]
-
-        for i in range(40):
-            self._board.append([tile_types[i],tile_names[i],tile_cost[i],tile_house_data[i],5]) #5 represents whether the tile is owned or not. player 1 = 0, player 2 = 0, etc.
-    
-
-class Player:
-    def __init__(self,name):
-        self._money = 1500
-        self._jail = False
-        self._jail_free = 0 
-        self._name = name
-        self._pos = 0 #play position
-        self._doubles = 0 #how many doubles the player has rolled
-        self._rolls = 1
-        self._prop = [] #properties owned
-
-    def roll_dice(self,x): #x is either 1 or 0. This differentiates between rolling for starting place and rolling in game
-        die_1 = random.randint(1,6)
-        die_2 = random.randint(1,6)
-        print('Rolling die...')
-        for i in range(10):
-            num1,num2 = random.randint(1,6),random.randint(1,6)
-            if i != 9:
-                sys.stdout.write("\r" + str(num1)+' '+str(num2))
-            else:
-                sys.stdout.write("\r" + str(die_1)+' '+str(die_2))
-            sys.stdout.flush()
-            sleep(.4)
-        sleep(1.5)
-        print()
-        self._recent_roll = die_1+die_2
-        if x == 1:
-            if die_1 == die_2:
-                self._doubles+=1
-                self._rolls+=1
-                print('Doubles! +1 roll this turn.')
-            if self._recent_roll in {8,11}:
-                string = 'You rolled an'
-            else:
-                string = 'You rolled a'
-            print(string,self._recent_roll)
-            print('\n\n')
-        return die_1+die_2
-    
-    def go(self):
-        self._money+=200
 
 
 #----------------------------------------------------------------------
@@ -205,7 +114,8 @@ def land(p_o,p,board):
     has lots of operations depending on what the player lands on and what they want to do.
 
     Base code for accessing the board at this location...
-    board._board[int(p_o[p]._pos)] [x]
+    board_pos = board.board[int(p_o[p].pos)]
+
     add [0] for type of tile
     add [1] for name of tile
     add [2] for cost of tile
@@ -218,20 +128,27 @@ def land(p_o,p,board):
         [5] =    hotel rent
         [6] =    house cost
         [7] = mortgage cost
-    add [4] for ownership info
+    add [4] for color
+    add [5] for tile card
+    add [6] for ownership info
+
+    EXAMPLE.... board_pos [2] == cost of the property
+    EXAMPLE.... board_pos [3] [4] == 4 houses rent
     '''
-    print('You landed on',board._board[int(p_o[p]._pos)][1])
-    if board._board[int(p_o[p]._pos)][0] == 0:
-        if board._board[int(p_o[p]._pos)][4] == 5:
-            print('This property is unowned. What would you like to do?')
-            print('  '+str(board._board[int(p_o[p]._pos)][1]))
-            print(' +'+'-'*len(board._board[int(p_o[p]._pos)][1])+'+')
-        else:
-            pass
-
-
+    board_pos = board.board[int(p_o[p].pos)]
+    print('You landed on',board_pos[1])
+    if board_pos[0] in {0,4,5}:
+        if board_pos[6] == 5:
+            cg,max = p_o[p].add_prop(board_pos[4])
+            print(board_pos[5])
+            print()
+            print('This property is unowned, what would you like to do?')
+            if board_pos[0] == 0:
+                print(f'You currently own {cg}/{max} cards of this color-group.')
+            elif board_pos[0] in {4,5}:
+                print(f'You currently own {cg}/{max} cards of this set.')
 def goes_first(player_count,players):
-    '''Small function soley for determining the player order of the game'''
+    '''Function soley for determining the player order of the game'''
     vals = []
     max = 0
     player_check = 0
@@ -239,11 +156,11 @@ def goes_first(player_count,players):
 
     for i in range(len(players)): #loop for getting the players rolls
         if i == 0:
-            print('\nLets see who goes first.',players[0]._name+', please roll the die.')
+            print('\nLets see who goes first.',players[0].name+', please roll the die.')
         elif i == len(players)-1 and len(players) != 2:
-            print('Finally,',players[i]._name+' please roll the die.')
+            print('Finally,',players[i].name+' please roll the die.')
         else:
-            print('Next up is',players[i]._name,'to roll.')
+            print('Next up is',players[i].name,'to roll.')
         roll = input("Press 'Enter' to roll the die.\n")
 
         while roll != '':
@@ -253,32 +170,31 @@ def goes_first(player_count,players):
         vals.append((x,players[i]))
         print()
         if x < 5:
-            print('Uh oh',players[i]._name+', you only got',x,'\n')
+            print('Uh oh',players[i].name+', you only got',x,'\n')
         if x > 4 and x <9:
-            print('Not bad',players[i]._name+', you scored',x,'\n')
+            print('Not bad',players[i].name+', you scored',x,'\n')
         if x > 8 and x != 12:
-            print('Well done',players[i]._name+', you got',str(x)+'\n')
+            print('Well done',players[i].name+', you got',str(x)+'\n')
         if x == 12:
-            print('Wow',players[i]._name,'you got a perfect 12!\n')
+            print('Wow',players[i].name,'you got a perfect 12!\n')
     vals.sort(key=lambda y: y[0],reverse=True)
 
     for i in range(len(vals)): #loop for deciding player order
         if i == 0:
-            print(vals[i][1]._name+', you scored',vals[i][0],'and will begin the game.')
+            print(vals[i][1].name+', you scored',vals[i][0],'and will begin the game.')
         else:
             try:
                 if i != 0 and vals[i+1][0] == vals[i][0]:
-                    print('Next will be',vals[i][1]._name+', who won the tie-breaker.')
+                    print('Next will be',vals[i][1].name+', who won the tie-breaker.')
                     play_order.append(vals[i][1])
                     sleep(2)
                     continue
             except:
-                pass
-            if i == len(vals)-1 and len(vals) != 2:
-                print('Finally, it will be '+vals[i][1]._name+"'s turn.")
-            else:
-                print('Next will be '+vals[i][1]._name+"'s turn.")
-        sleep(2)
+                if i == len(vals)-1 and len(vals) != 2:
+                    print('Finally, it will be '+vals[i][1].name+"'s turn.")
+                else:
+                    print('Next will be '+vals[i][1].name+"'s turn.")
+#        sleep(2)
         play_order.append(vals[i][1])
     print('\n\n\n\n\nLoading game...\n\n')
     return play_order
@@ -330,20 +246,20 @@ def title(): #Function for displaying the title of the game
 
 
 def rules():
-    WEBSITE = "https://www.officialgamerules.org/monopoly"
     answer = 'z'
+    website = 'https://www.officialgamerules.org/monopoly'
     print()
-    print(f"Type 'yes' if you want to open {WEBSITE}.")
+    print(f"Type 'yes' if you want to open {website}.")
     print("Or type, 'no' if not.")
-    while answer.lower() not in {'yes', 'no'}:
+    while answer.lower() not in {'yes','no'}:
         answer = input()
-        if answer.lower() not in {'yes', 'no'}:
+        if answer.lower() not in {'yes','no'}:
             print('Try again')
     answer.lower()
     print('\n')
     if answer == 'yes':
-        webbrowser.open(WEBSITE)
-    if answer == 'no':  # Can just be removed unless you need something when answer == no
+        webbrowser.open(website)
+    if answer == 'no':
         pass
     print()
 
