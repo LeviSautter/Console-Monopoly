@@ -10,6 +10,7 @@ import webbrowser
 import os
 from time import *
 from CM_Classes import *
+from graphics import *
 
 def main():
     print('+--------------------+')
@@ -20,6 +21,9 @@ def main():
     board = Board()
     player_count = 0
     players = []
+#    gui = graphics(1000,1000,"Console Monopoly")
+#    screen = Screen()
+#    screen.title(gui)
 
     while player_count not in range(2, 5):
         player_count = input().strip()
@@ -38,12 +42,12 @@ def main():
 
 
 def game(p_o,board):
-    p = 0 #This variable represents the index of the current player.  p= 0 means player 1, etc.
-    command = ''
-    while board.game_over is False: #Game loop
-        print("It's your turn",p_o[p].name)
+    p = 0 #This variable represents the index of the current player.  p = 0 means player 1, etc.
+    command = 'z'
 
-        while command != 'end' or p_o[p].jail is False: #Turn loop
+    while board.game_over is False: # Game loop
+        print("It's your turn",p_o[p].name)
+        while command != 'end' or p_o[p].jail is False: # Turn loop
             if p_o[p].doubles == 3:
                 pass #SEND TO JAIL HAERE
             print("Please enter a command...")
@@ -62,6 +66,9 @@ def game(p_o,board):
                 print('-'*50)
                 print('\n\n')
                 break
+
+            elif command == 'buildings':
+                building(p_o,p,board)
 
             elif command == 'end' and p_o[p].rolls != 0:
                 print('You still have a roll available')
@@ -82,7 +89,7 @@ def game(p_o,board):
                     continue
                 else:
                     p_o[p].rolls -= 1
-                    x=p_o[p].roll_dice(1)
+                    x=p_o[p].roll_dice(True)
                     p_o[p].pos += x
                     if p_o[p].pos > 39:
                         p_o[p].pos -=40
@@ -130,16 +137,19 @@ def land(p_o,p,board):
         [7] = mortgage cost
     add [4] for color
     add [5] for tile card
-    add [6] for ownership info
+    add [6] for building count
+    add [7] for ownership info
 
     EXAMPLE.... board_pos [2] == cost of the property
     EXAMPLE.... board_pos [3] [4] == 4 houses rent
     '''
     board_pos = board.board[int(p_o[p].pos)]
     print('You landed on',board_pos[1])
-    if board_pos[0] in {0,4,5}:
-        if board_pos[6] == 5:
-            cg,max = p_o[p].add_prop(board_pos[4])
+    if board_pos[0] in {0,4,5}:                          # Condition that board type is property, RR, or utility
+
+    
+        if board_pos[7] == 5:                            # Condition if the tile is un-owned
+            cg,max = p_o[p].add_prop(board_pos[4],False)
             print(board_pos[5])
             print()
             print(f'This property is unowned and costs ${board_pos[2]}, what would you like to do?')
@@ -148,7 +158,6 @@ def land(p_o,p,board):
             elif board_pos[0] in {4,5}:
                 print(f'You currently own {cg}/{max} cards of this set.')
             command = 'z'
-
             while command != 'pass':
                 print('Please enter a property command...')
                 command = input().lower()
@@ -164,17 +173,32 @@ def land(p_o,p,board):
                             print('\n\n')
                             if command == 'yes':
                                 print('Property purchased!')
+                                for i in range(board_pos[2]):
+                                    sys.stdout.write("\r" + 'Your Balance:'+' $'+str(p_o[p].money-i-1))
+                                    sys.stdout.flush()
+                                    sleep(.002)
+                                p_o[p].props.append(board_pos)     # adding property info to player
+                                p_o[p].money-=board_pos[2]         # adjusting players money
+                                p_o[p].add_prop(board_pos[4],True) # adding a count to the players color-group/set
+                                board_pos[7] = p                   # setting the ownership to current player
+                                print()
+                                sleep(2)
+                                return
                             elif command == 'no':
                                 print('Property not purchased')
                             else:
                                 print('Try again')
                     else:
-                        print('insufficient funds!')
+                        print('Insufficient funds!')
                         print(f'You need an additional ${abs(board_pos[2]-p_o[p].money)} to purchase this property.')
                 
                 elif command == 'pass':
                     print('Property not purchased')
                     break
+
+                elif command == 'card':
+                    print(board_pos[5])
+
 
                 elif command == 'balance':
                     print('You have $'+str(p_o[p].money))
@@ -186,8 +210,155 @@ def land(p_o,p,board):
                     help_menu(1)
                     
                 else:
-                    print('\n\n')
                     print("Unknown command. Please try again, or type 'help'.")
+
+
+        elif board_pos[7] in {0,1,2,3}: # player landing on another players property
+            print(f"Uh-oh, you landed on {p_o[board_pos[7]].name}'s property.")
+            sleep(2)
+            if board_pos[0] in {0,4}:
+                if board_pos[0] == 0 and board_pos[6] in {0,2,3,4}:
+                    string = 'houses.'
+                if board_pos[0] == 0 and board_pos[6] == 1:
+                    string = 'house.'
+                if board_pos[0] == 0 and board_pos[6] != 5:
+                    print(f"{p_o[board_pos[board_pos[7]]].name}'s {board_pos[1]} has {board_pos[6]}",string)
+                if board_pos[0] == 0 and board_pos[6] == 5:
+                    print(f"{p_o[board_pos[board_pos[7]]].name}'s {board_pos[1]} has a hotel.")
+                sleep(2)
+                print(f"Your rent is ${board_pos[3][board_pos[6]]}")
+                sleep(2)
+                print('\n\n')
+                if p_o[p].money >= board_pos[3][board_pos[6]]:   # player paying rent
+                    for i in range(board_pos[3][board_pos[6]]):
+                        sys.stdout.write("\r" + 'Your Balance:'+' $'+str(p_o[p].money-i-1)+'    '+
+                                          p_o[board_pos[7]].name+"'s Balance: $"+(str(p_o[board_pos[7]].money+i+1)))
+                        sys.stdout.flush()
+                        sleep(.002)
+                    p_o[p].money-=board_pos[3][board_pos[6]]
+                    p_o[board_pos[7]].money+=board_pos[3][board_pos[6]]
+                    print()
+                else:             # If the player cannot afford rent
+                    print('Insufficient funds!')
+                    sleep(2)
+                    print('You must sell some buildings or mortgage a few properties! ')
+                    print(f'You need to make up ${abs(board_pos[3][board_pos[6]]-p_o[p].money)} to break even and stay in the game.')
+                    print('If you are un-able to find the funds, you will go bankrupt!')
+
+
+#------------------------------------------------
+#------------------------------------------------
+#------------------------------------------------
+
+
+def building(p_o,p,board):
+    board_pos = board.board[int(p_o[p].pos)]     #Defined in land()
+    print()
+    if len(p_o[p].props) == 0:
+        print('You do not have any properties to buy buildings for.')
+        print('Go buy some properties!')
+    else:
+        print('You want to buy or sell some buildings?')
+        print('Here is a list of every property you own.')
+        sleep(2)
+        print()
+        print(f"---------- {p_o[p].name}'s Properties ----------")
+        for i in range(len(p_o[p].props)):
+            print(p_o[p].props[i][1])
+        print(f"-----------{'-'*len(p_o[p].name)}------------------------")
+        print('Please type the name of the property you wish to purchase or sell buildings for. ')
+        print('\n')
+
+        while True:
+            print('Please enter a building command...')
+            y = 0
+            command = input().lower()
+            
+            if command == 'rules':
+                rules()
+
+            if command == 'help':
+                help_menu(1)   
+                
+            else:
+
+                for property in p_o[p].props:
+                    if property[1].lower() == command.lower():
+                        cur_prop = property[1]
+                        y = 1   # Checker to verify that a name has been found and matches
+                        break
+                    else:
+                        print("Unknown property. Please try again, or type 'help'.")
+                        continue
+
+                if y == 1:
+
+                    for i in range(len(board.board)):
+                        if board.board[i][1].lower() == cur_prop.lower():
+                            changed = board.board[i]
+                            buy_check(p_o,p,changed,board)
+                            buy_check2(p_o,p,changed,board)
+                            break
+
+                    if changed[0] == 0 and changed[6] == 1:
+                        print(f'You own 1 house for {changed[1]}')
+                    if changed[0] == 0 and changed[6] not in {1,5}:
+                        print(f'You own {changed[6]} houses for {changed[1]}')
+                    if changed[0] == 0 and changed[6] == 5:
+                        print(f'You own the hotel for {changed[1]}')
+                    sleep(2)
+                    print(f"Buildings for {changed[1]} cost ${changed[3][6]} each, or ${changed[3][6]/2} to sell.")
+                    print('Did you want to buy or sell?')
+
+                    while True:
+                        command = input().lower()
+
+                        if command == 'buy':
+                            if changed[6] < p_o[p].buy_brown and p_o[p].brown_cg == 2:
+                                x = True
+                            elif changed[6] < p_o[p].buy_light_b and p_o[p].light_b_cg == 3:
+                                x = True
+                            elif changed[6] < p_o[p].buy_pink and p_o[p].pink_cg == 3:
+                                x = True
+                            elif changed[6] < p_o[p].buy_orange and p_o[p].orange_cg == 3:
+                                x = True
+                            elif changed[6] < p_o[p].buy_red and p_o[p].red_cg == 3:
+                                x = True
+                            elif changed[6] < p_o[p].buy_yellow and p_o[p].yellow_cg == 3:
+                                x = True
+                            elif changed[6] < p_o[p].buy_green and p_o[p].green_cg == 3:
+                                x = True
+                            elif changed[6] < p_o[p].buy_blue and p_o[p].blue_cg == 2:
+                                x = True
+                            else:
+                                x = False
+                            if x == True:
+                                changed[6]+=1
+                                print('PURCHASED')
+                            else:
+                                print('fail')
+                                return
+
+                        elif command == 'sell':
+                            if changed[6] == 0:
+                                print('You have no buildings to sell on this property!')
+                                return
+                        
+                        elif command == 'back':
+                            print('\n\n')
+                            return
+
+                        else:
+                            print("Try again, or type 'back' to exit")
+                    
+
+
+
+
+
+#------------------------------------------------
+#------------------------------------------------
+#------------------------------------------------
 
 
 def goes_first(player_count,players):
@@ -209,7 +380,7 @@ def goes_first(player_count,players):
         while roll != '':
             roll = input("Press 'Enter' to roll the die.\n")
 
-        x=players[i].roll_dice(0)
+        x=players[i].roll_dice(False)
         vals.append((x,players[i]))
         print()
         if x < 5:
@@ -243,6 +414,86 @@ def goes_first(player_count,players):
     return play_order
 
 
+#------------------------------------------------
+#------------------------------------------------
+#------------------------------------------------
+
+
+def buy_check(p_o,p,changed,board):  # function for seeing if buildings are available and unlocks them
+    for tile in board.board:
+        if tile[4] == changed[4]:
+            if tile[4] == 'Brown':
+                if p_o[p].brown_cg == 2:
+                    p_o[p].buy_brown = 1
+            if tile[4] == 'Light Blue':
+                if p_o[p].light_b_cg == 3:
+                    p_o[p].buy_light_b = 1
+            if tile[4] == 'Pink':
+                if p_o[p].pink_cg == 3:
+                    p_o[p].buy_pink = 1   
+            if tile[4] == 'Orange':
+                if p_o[p].orange_cg == 3:
+                    p_o[p].buy_orange = 1 
+            if tile[4] == 'Red':
+                if p_o[p].red_cg == 3:
+                    p_o[p].buy_red = 1
+            if tile[4] == 'Yellow':
+                if p_o[p].yellow_cg == 3:
+                    p_o[p].buy_yellow = 1
+            if tile[4] == 'Green':
+                if p_o[p].green_cg == 3:
+                    p_o[p].buy_green = 1
+            if tile[4] == 'Blue':
+                if p_o[p].blue_cg == 2:
+                    p_o[p].buy_blue = 1
+
+def buy_check2(p_o,p,changed,board):
+    checker = 0
+    for tile in board.board:
+        if tile[4] == changed[4]:
+            if tile[6] != 5:
+                if tile[6] == changed[6]:
+                    if tile[4] == 'Brown' and p_o[p].buy_brown == tile[6]:
+                        checker+=1
+                        if checker == 2:
+                            p_o[p].buy_brown+=1
+                    if tile[4] == 'Light Blue' and p_o[p].buy_light_b == tile[6]:
+                        checker+=1
+                        if checker == 3:
+                            p_o[p].buy_light_b+=1
+                    if tile[4] == 'Pink' and p_o[p].buy_pink == tile[6]:
+                        checker+=1
+                        if checker == 3:
+                            p_o[p].buy_light_b+=1
+                    if tile[4] == 'Orange' and p_o[p].buy_orange == tile[6]:
+                        checker+=1
+                        if checker == 3:
+                            p_o[p].buy_orange+=1
+                    if tile[4] == 'Red' and p_o[p].buy_red == tile[6]:
+                        checker+=1
+                        if checker == 3:
+                            p_o[p].buy_red+=1
+                    if tile[4] == 'Yellow' and p_o[p].buy_yellow == tile[6]:
+                        checker+=1
+                        if checker == 3:
+                            p_o[p].buy_yellow+=1
+                    if tile[4] == 'Green' and p_o[p].buy_green == tile[6]:
+                        checker+=1
+                        if checker == 3:
+                            p_o[p].buy_green+=1
+                    if tile[4] == 'Blue' and p_o[p].buy_blue == tile[6]:
+                        checker+=1
+                        if checker == 3:
+                            p_o[p].buy_blue+=1
+
+            
+            
+
+#------------------------------------------------
+#------------------------------------------------
+#------------------------------------------------
+
+
 def help_menu(x):
     '''Displays all the rules and information about the game when called.'''
     if x != 0:
@@ -265,18 +516,26 @@ def help_menu(x):
     print('card of that tile. From there you can chose to buy it or not.')
     print("To buy a property, type 'buy'")
     print("To not buy a property, type 'pass'")
+    print("To re-view the property card, type 'card'")
     print('If the property is owned by another player. You will be required ')
     print('to pay the full rent to the owner.')
-
-    if x != 0:
-        print('-------- JAIL ----------\n')
-        print('While in jail, there are a few ways to get out.')
-        print('First, you can use a get out of jail free card.')
-        print('Second you can pay $50.')
-        print('Finally you can attempt to roll doubles.')
-        print('If you do not roll doubles in 3 turns, you must pay $50.')
+    print('\n')
+    print('---- BUILDING MENU -----\n')
+    print("To buy a building, type the name of the desired property.")
+    print('\n')
+    print('-------- JAIL ----------\n')
+    print('While in jail, there are a few ways to get out.')
+    print('First, you can use a get out of jail free card.')
+    print('Second you can pay $50.')
+    print('Finally you can attempt to roll doubles.')
+    print('If you do not roll doubles in 3 turns, you must pay $50.')
     print('-'*50)
     print('\n\n')
+
+
+#------------------------------------------------
+#------------------------------------------------
+#------------------------------------------------
 
 
 def title(): #Function for displaying the title of the game
@@ -294,6 +553,11 @@ def title(): #Function for displaying the title of the game
         print(char, end='')
         sleep(.02)
     print('\n\n')
+
+
+#------------------------------------------------
+#------------------------------------------------
+#------------------------------------------------
 
 
 def rules():
