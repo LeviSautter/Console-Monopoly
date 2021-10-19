@@ -20,12 +20,12 @@ def main():
     board = Board()
     player_count = 0
     players = []
-    player_order = []
 
     while player_count not in range(2, 5):
-        player_count = input()
-        if not (player_count.strip().isdigit() and int(player_count) in range(2, 5) and player_count != ''):
+        player_count = input().strip()
+        if not (player_count.isdecimal() and int(player_count) in range(2, 5)):
             print('Try again, 2-4 players only.')
+            continue
         player_count = int(player_count)
 
     for i in range(player_count):
@@ -142,11 +142,54 @@ def land(p_o,p,board):
             cg,max = p_o[p].add_prop(board_pos[4])
             print(board_pos[5])
             print()
-            print('This property is unowned, what would you like to do?')
+            print(f'This property is unowned and costs ${board_pos[2]}, what would you like to do?')
             if board_pos[0] == 0:
                 print(f'You currently own {cg}/{max} cards of this color-group.')
             elif board_pos[0] in {4,5}:
                 print(f'You currently own {cg}/{max} cards of this set.')
+            command = 'z'
+
+            while command != 'pass':
+                print('Please enter a property command...')
+                command = input().lower()
+                print('\n\n')
+                if command == 'buy':
+                    if p_o[p].money >= board_pos[2]:
+                        print(f'Are you sure you want to buy this property for ${board_pos[2]}?')
+                        print(f'You have ${p_o[p].money} now and will have ${p_o[p].money-board_pos[2]} after you acquire the deed.')
+                        print("Type 'yes' or 'no'.")
+                        command = 'z'
+                        while command not in {'yes','no'}:
+                            command = input().lower()
+                            print('\n\n')
+                            if command == 'yes':
+                                print('Property purchased!')
+                            elif command == 'no':
+                                print('Property not purchased')
+                            else:
+                                print('Try again')
+                    else:
+                        print('insufficient funds!')
+                        print(f'You need an additional ${abs(board_pos[2]-p_o[p].money)} to purchase this property.')
+                
+                elif command == 'pass':
+                    print('Property not purchased')
+                    break
+
+                elif command == 'balance':
+                    print('You have $'+str(p_o[p].money))
+
+                elif command == 'rules':
+                    rules()
+
+                elif command == 'help':
+                    help_menu(1)
+                    
+                else:
+                    print('\n\n')
+                    print("Unknown command. Please try again, or type 'help'.")
+
+
 def goes_first(player_count,players):
     '''Function soley for determining the player order of the game'''
     vals = []
@@ -217,6 +260,14 @@ def help_menu(x):
     print('Pass GO and recieve $200.')
     print('Win by achieving $10,000 in cash, or making all other players go bankrupt.\n\n')
     print('---- PROPERTY MENU -----\n')
+    print('When you land on a property, a few things will happen.')
+    print('If the property is unowned, you will be propted with the')
+    print('card of that tile. From there you can chose to buy it or not.')
+    print("To buy a property, type 'buy'")
+    print("To not buy a property, type 'pass'")
+    print('If the property is owned by another player. You will be required ')
+    print('to pay the full rent to the owner.')
+
     if x != 0:
         print('-------- JAIL ----------\n')
         print('While in jail, there are a few ways to get out.')
